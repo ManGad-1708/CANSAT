@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PocketQube Ground Station</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#090d15; --panel:#111827; --panel2:#0d1320; --line:#1f2a3d; --text:#e6edf7; --muted:#8693a8;
+    --accent:#4cc9f0; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+    --r:#ff5d6c; --g:#4ade80; --b:#60a5fa; --w:#e5e7eb; --a:#fbbf24; --p:#c084fc;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:14px}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0f1626,#0b111c);position:sticky;top:0;z-index:10}
+  .brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+  .brand .logo{width:30px;height:30px;border-radius:7px;background:conic-gradient(from 210deg,#4cc9f0,#c084fc,#4cc9f0);display:grid;place-items:center;font-weight:700;color:#0b0f17}
+  .brand h1{font-size:16px;margin:0;font-weight:600;letter-spacing:.2px}
+  .brand small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+  button,.btn{background:#1a2438;color:var(--text);border:1px solid #2a3852;border-radius:8px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;transition:background .15s,border-color .15s}
+  button:hover{background:#22304a;border-color:#3a4c6e}
+  button.primary{background:#0e7490;border-color:#0891b2}
+  button.primary:hover{background:#0891b2}
+  button.danger{background:#3b1520;border-color:#7f1d1d}
+  button.on{background:#14532d;border-color:#16a34a}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#121a2b;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:#556}
+  .pill.live .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .pill.demo .dot{background:var(--p);box-shadow:0 0 8px var(--p)}
+  .pill.stale .dot{background:var(--warn)}
+  .banner{margin:12px 20px 0;padding:10px 14px;border-radius:8px;background:#2a1f0b;border:1px solid #6b4f12;color:#fde68a;font-size:13px;display:none}
+  main{padding:16px 20px 30px;display:grid;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:0}
+  .card h2{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0;font-weight:600}
+  .card .hd{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .card .hd .sp{margin-left:auto}
+  .top{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,1fr);gap:16px}
+  #viewer{position:relative;height:540px;background:radial-gradient(ellipse at 50% 40%,#16213a 0%,#0a0f1a 70%)}
+  #viewer canvas{display:block}
+  .hud{position:absolute;left:14px;top:12px;display:flex;gap:8px;pointer-events:none}
+  .hud div{background:rgba(9,13,21,.75);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:84px}
+  .hud span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
+  .hud b{font-family:"JetBrains Mono",monospace;font-size:17px;font-weight:600}
+  .vtools{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .vtools .row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .vtools button{font-size:12px;padding:5px 9px;background:rgba(26,36,56,.85)}
+  .vtools label{font-size:12px;color:var(--muted);background:rgba(9,13,21,.75);border:1px solid var(--line);border-radius:7px;padding:4px 8px;display:flex;gap:5px;align-items:center;cursor:pointer}
+  select{background:#1a2438;color:var(--text);border:1px solid #2a3852;border-radius:7px;padding:4px 6px;font:inherit;font-size:12px}
+  .legend3d{position:absolute;left:14px;bottom:12px;font-size:11px;color:var(--muted);background:rgba(9,13,21,.7);border:1px solid var(--line);border-radius:8px;padding:6px 10px;line-height:1.6}
+  .legend3d i{display:inline-block;width:10px;height:3px;margin-right:5px;vertical-align:middle}
+  .side{display:grid;gap:16px;grid-template-rows:auto 1fr}
+  .instr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px}
+  .instr figure{margin:0;text-align:center}
+  .instr canvas{width:100%;max-width:200px;aspect-ratio:1;display:block;margin:0 auto}
+  .instr figcaption{color:var(--muted);font-size:11px;letter-spacing:.8px;text-transform:uppercase;margin-top:4px}
+  .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line)}
+  .tile{background:var(--panel);padding:11px 14px}
+  .tile span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.7px}
+  .tile b{display:block;font-family:"JetBrains Mono",monospace;font-size:21px;font-weight:600;margin-top:2px}
+  .tile b small{font-size:12px;color:var(--muted);font-weight:400;margin-left:3px}
+  .chartbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .chart .legend{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);cursor:pointer;user-select:none;background:#0f1626}
+  .chip i{width:9px;height:9px;border-radius:50%}
+  .chip.off{opacity:.35}
+  .chip em{font-style:normal;font-family:"JetBrains Mono",monospace;color:var(--muted);min-width:44px;text-align:right}
+  .chart canvas{width:100%;height:210px;display:block;cursor:crosshair}
+  .bottom{display:grid;grid-template-columns:1.2fr 1fr 1.2fr;gap:16px}
+  #track{width:100%;height:280px;display:block;background:var(--panel2)}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
+  .kv div{background:var(--panel);padding:8px 12px}
+  .kv span{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.7px;display:block}
+  .kv b{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600}
+  #events{list-style:none;margin:0;padding:8px 14px;max-height:325px;overflow:auto}
+  #events li{padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline}
+  #events li time{font-family:"JetBrains Mono",monospace;color:var(--muted);font-size:12px;min-width:58px}
+  #events li .tag{font-size:10px;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .empty{color:var(--muted);padding:18px 14px;font-size:13px}
+  #console{height:230px;overflow:auto;margin:0;padding:10px 14px;font-size:11.5px;line-height:1.5;background:var(--panel2);color:#a9b6cc;white-space:pre-wrap;word-break:break-all}
+  .cmds{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line)}
+  .cmds button{font-size:12px;padding:5px 9px}
+  .cmdin{display:flex;gap:6px;padding:0 14px 12px}
+  .cmdin input{flex:1;background:#0d1320;border:1px solid #2a3852;border-radius:7px;color:var(--text);padding:6px 9px;font:inherit;font-family:"JetBrains Mono",monospace;font-size:12px}
+  .muted{color:var(--muted)}
+  @media (max-width:1150px){.top{grid-template-columns:1fr}.bottom{grid-template-columns:1fr}}
+  @media (max-width:800px){.charts{grid-template-columns:1fr}#viewer{height:420px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">K</div>
+    <div><h1>PocketQube Ground Station</h1><small>ESP32 · Foxeer M10Q GNSS + compass · GY-91 IMU + barometer</small></div>
+  </div>
+  <span id="status" class="pill"><span class="dot"></span><span id="statusText">Not connected</span></span>
+  <span class="pill mono" id="rate">0 Hz</span>
+  <button id="btnConnect" class="primary">Connect ESP32 (USB)</button>
+  <button id="btnDemo">Demo flight</button>
+  <button id="btnStop" class="danger" disabled>Stop</button>
+  <button id="btnRec">● Record</button>
+  <button id="btnCsv" disabled>Download CSV</button>
+  <button id="btnCopy" disabled>Copy CSV</button>
+</header>
+<div class="banner" id="banner"></div>
+
+<main>
+  <section class="top">
+    <div class="card">
+      <div class="hd"><h2>PocketQube attitude · GY-91</h2><span class="sp muted" style="font-size:12px">Drag to orbit · scroll to zoom</span></div>
+      <div id="viewer">
+        <div class="hud">
+          <div><span>Roll</span><b id="hRoll">--</b></div>
+          <div><span>Pitch</span><b id="hPitch">--</b></div>
+          <div><span>Yaw</span><b id="hYaw">--</b></div>
+        </div>
+        <div class="vtools">
+          <div class="row">
+            <button id="btnTare" title="Make current orientation the zero position">Tare</button>
+            <button id="btnUntare">Clear tare</button>
+            <button id="btnView">Reset view</button>
+          </div>
+          <div class="row">
+            <label>Yaw from
+              <select id="yawSrc">
+                <option value="compass">Compass heading</option>
+                <option value="gyro">Gyro (integrated Gz)</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label><input type="checkbox" id="xray" checked> X-ray</label>
+            <label><input type="checkbox" id="axes" checked> Axes</label>
+          </div>
+          <div class="row">
+            <label><input type="checkbox" id="invR"> Invert roll</label>
+            <label><input type="checkbox" id="invP"> Invert pitch</label>
+            <label><input type="checkbox" id="invY"> Invert yaw</label>
+          </div>
+        </div>
+        <div class="legend3d">
+          <div><i style="background:var(--r)"></i>GY-91 X axis</div>
+          <div><i style="background:var(--g)"></i>GY-91 Y axis</div>
+          <div><i style="background:var(--b)"></i>GY-91 Z axis (up)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="hd"><h2>Instruments</h2></div>
+        <div class="instr">
+          <figure><canvas id="horizon" width="400" height="400"></canvas><figcaption>Attitude</figcaption></figure>
+          <figure><canvas id="compass" width="400" height="400"></canvas><figcaption>Heading</figcaption></figure>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tiles" id="tiles"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="hd">
+      <h2>Live telemetry</h2>
+      <div class="sp chartbar">
+        <span class="muted" style="font-size:12px">Window</span>
+        <select id="win">
+          <option value="10">10 s</option>
+          <option value="30" selected>30 s</option>
+          <option value="60">60 s</option>
+          <option value="120">2 min</option>
+          <option value="300">5 min</option>
+        </select>
+        <button id="btnPause">Pause</button>
+        <span class="muted" style="font-size:12px">Click legend items to hide lines · hover for values</span>
+      </div>
+    </div>
+    <div style="padding:16px" class="charts" id="charts"></div>
+  </section>
+
+  <section class="bottom">
+    <div class="card">
+      <div class="hd"><h2>GNSS track</h2><span class="sp"><button id="btnClearTrack" style="font-size:12px;padding:4px 9px">Clear track</button></span></div>
+      <canvas id="track"></canvas>
+      <div class="kv">
+        <div><span>Latitude</span><b id="gLat">--</b></div>
+        <div><span>Longitude</span><b id="gLon">--</b></div>
+        <div><span>GPS altitude</span><b id="gAlt">--</b></div>
+        <div><span>Satellites</span><b id="gSat">--</b></div>
+        <div><span>HDOP</span><b id="gHdop">--</b></div>
+        <div><span>From start</span><b id="gDist">--</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h2>Flight events</h2><span class="sp"><button id="btnClearEv" style="font-size:12px;padding:4px 9px">Clear</button></span></div>
+      <ul id="events"><li class="empty" style="border:0">Events like launch, free fall, apogee, high-g shocks and landing appear here.</li></ul>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h2>Serial console & commands</h2><span class="sp"><label class="muted" style="font-size:12px"><input type="checkbox" id="autoscroll" checked> Auto-scroll</label></span></div>
+      <pre id="console" class="mono"></pre>
+      <div class="cmds">
+        <button data-cmd="p">Graph mode (p)</button>
+        <button data-cmd="t">Text mode (t)</button>
+        <button data-cmd="z">Zero baro (z)</button>
+        <button data-cmd="g">Gyro cal (g)</button>
+        <button data-cmd="c">Compass cal (c)</button>
+        <button data-cmd="a">Accel cal (a)</button>
+        <button data-cmd="">Enter ⏎</button>
+      </div>
+      <div class="cmdin"><input id="cmdText" placeholder="Send custom text to ESP32…"><button id="cmdSend">Send</button></div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+"use strict";
+// =====================================================================
+// State
+// =====================================================================
+const S = {
+  buf: [],               // packets {_t, ...fields}
+  latest: {},
+  mode: 'idle',          // idle | live | demo
+  lastPacketAt: 0,
+  packetTimes: [],
+  paused: false, pauseAt: 0,
+  recording: false, rec: [], recKeys: new Set(),
+  tare: {roll:0, pitch:0, yaw:0},
+  gyroYaw: 0, lastGyroT: 0,
+  track: [], origin: null,
+  ev: {maxAlt: -1e9, launched:false, apogee:false, landed:false, ffStart:0, ffLogged:false, lastShock:0, calmSince:0},
+};
+const MAX_BUF_SEC = 320;
+const $ = id => document.getElementById(id);
+const nowS = () => performance.now() / 1000;
+
+function banner(msg) { const b = $('banner'); if (!msg) { b.style.display = 'none'; return; } b.innerHTML = msg; b.style.display = 'block'; }
+
+// =====================================================================
+// Parsing + ingest
+// =====================================================================
+function parseLine(line) {
+  if (line.indexOf(':') < 0) return null;
+  const o = {}; let n = 0;
+  for (const part of line.split(',')) {
+    const i = part.indexOf(':');
+    if (i < 1) continue;
+    const k = part.slice(0, i).trim();
+    const v = parseFloat(part.slice(i + 1));
+    if (!isNaN(v) && /^[A-Za-z_]\w*$/.test(k)) { o[k] = v; n++; }
+  }
+  return n >= 3 ? o : null;
+}
+
+function ingestLine(line) {
+  line = line.replace(/\r/g, '');
+  if (!line.trim()) return;
+  const p = parseLine(line);
+  if (!p) { logConsole(line); return; }
+  consoleSample++;
+  if (consoleSample % 20 === 0) logConsole(line);
+  const t = nowS();
+  p._t = t;
+  // integrate gyro yaw
+  if (p.Gz_dps !== undefined) {
+    if (S.lastGyroT) S.gyroYaw -= p.Gz_dps * Math.min(0.2, t - S.lastGyroT);
+    S.lastGyroT = t;
+    p._gyroYaw = ((S.gyroYaw % 360) + 360) % 360;
+  }
+  S.latest = p;
+  S.lastPacketAt = t;
+  S.packetTimes.push(t);
+  S.buf.push(p);
+  while (S.buf.length && S.buf[0]._t < t - MAX_BUF_SEC) S.buf.shift();
+  updateTrack(p);
+  detectEvents(p);
+  if (S.recording) {
+    const row = {time_s: (t - S.recStart).toFixed(3)};
+    for (const k in p) if (k[0] !== '_') { row[k] = p[k]; S.recKeys.add(k); }
+    S.rec.push(row);
+    $('btnRec').textContent = '■ Stop (' + S.rec.length + ')';
+  }
+}
+
+// =====================================================================
+// Console
+// =====================================================================
+let consoleSample = 0;
+const conLines = [];
+function logConsole(txt, cls) {
+  conLines.push(txt);
+  if (conLines.length > 300) conLines.splice(0, conLines.length - 300);
+  conDirty = true;
+}
+let conDirty = false;
+function flushConsole() {
+  if (!conDirty) return;
+  conDirty = false;
+  const c = $('console');
+  c.textContent = conLines.join('\n');
+  if ($('autoscroll').checked) c.scrollTop = c.scrollHeight;
+}
+
+// =====================================================================
+// Web Serial
+// =====================================================================
+let port = null, reader = null, writer = null, keepReading = false;
+
+function serialAllowed() {
+  if (!('serial' in navigator)) return 'no-api';
+  try {
+    const fp = document.permissionsPolicy || document.featurePolicy;
+    if (fp && fp.allowsFeature && !fp.allowsFeature('serial')) return 'blocked';
+  } catch (e) {}
+  return 'ok';
+}
+
+async function connectSerial() {
+  const ok = serialAllowed();
+  if (ok === 'no-api') { banner('<b>USB connection needs Chrome or Edge on a computer.</b> This browser has no Web Serial support. You can still try <b>Demo flight</b>.'); return; }
+  if (ok === 'blocked') { banner('<b>Live USB is blocked inside this viewer.</b> Open the downloaded <span class="mono">pocketqube_ground_station.html</span> file directly in Chrome or Edge to connect to the ESP32. <b>Demo flight</b> works here.'); return; }
+  try {
+    stopAll();
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    banner('');
+    S.mode = 'live';
+    setControls();
+    logConsole('--- connected at 115200 baud ---');
+    const enc = new TextEncoderStream();
+    enc.readable.pipeTo(port.writable).catch(() => {});
+    writer = enc.writable.getWriter();
+    keepReading = true;
+    readLoop();
+    setTimeout(() => sendCmd('p'), 600);   // make sure firmware is in graph mode
+  } catch (e) {
+    if (e && e.name === 'NotFoundError') return; // user cancelled
+    if (e && e.name === 'SecurityError') {
+      banner('<b>Live USB is blocked inside this viewer.</b> Open the downloaded <span class="mono">pocketqube_ground_station.html</span> file directly in Chrome or Edge. <b>Demo flight</b> works here.');
+    } else {
+      banner('<b>Could not open the port:</b> ' + (e && e.message ? e.message : e) + '<br>Close the Arduino Serial Monitor / Plotter first. Only one program can use the COM port at a time.');
+    }
+    S.mode = 'idle'; setControls();
+  }
+}
+
+async function readLoop() {
+  const dec = new TextDecoderStream();
+  const closed = port.readable.pipeTo(dec.writable).catch(() => {});
+  reader = dec.readable.getReader();
+  let partial = '';
+  try {
+    while (keepReading) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      partial += value;
+      let idx;
+      while ((idx = partial.indexOf('\n')) >= 0) {
+        ingestLine(partial.slice(0, idx));
+        partial = partial.slice(idx + 1);
+      }
+      if (partial.length > 4000) partial = '';
+    }
+  } catch (e) {
+    logConsole('--- read error: ' + e.message + ' ---');
+  }
+  try { reader.releaseLock(); } catch (e) {}
+  await closed;
+}
+
+async function disconnectSerial() {
+  keepReading = false;
+  try { if (reader) await reader.cancel(); } catch (e) {}
+  try { if (writer) { await writer.close(); } } catch (e) {}
+  try { if (port) await port.close(); } catch (e) {}
+  port = reader = writer = null;
+}
+
+async function sendCmd(txt) {
+  if (S.mode === 'demo') { logConsole('> ' + (txt || '⏎') + '   (demo mode: command not sent)'); return; }
+  if (!writer) { logConsole('> not connected'); return; }
+  try { await writer.write(txt + '\n'); logConsole('> ' + (txt || '⏎')); } catch (e) { logConsole('> send failed: ' + e.message); }
+}
+
+// =====================================================================
+// Demo flight generator
+// =====================================================================
+let demoTimer = null, demoT = 0;
+function startDemo() {
+  stopAll();
+  resetSession();
+  S.mode = 'demo'; setControls(); banner('');
+  logConsole('--- demo flight: simulated ascent, apogee, parachute descent ---');
+  demoT = 0;
+  demoTimer = setInterval(() => { demoT += 0.05; ingestLine(demoLine(demoT)); }, 50);
+}
+function rnd(a) { return (Math.random() * 2 - 1) * a; }
+const demoPrev = {alt:0, roll:0, pitch:0, hdg:0};
+function demoLine(t) {
+  const T = t % 100;
+  let alt, phase;
+  if (T < 8) { alt = 0; phase = 'pad'; }
+  else if (T < 22) { const u = T - 8; alt = 0.5 * 4.2 * u * u; if (alt > 410) alt = 410; phase = 'ascent'; }
+  else if (T < 24) { alt = 412 + (T - 22) * 1; phase = 'apogee'; }
+  else if (T < 90) { alt = Math.max(0, 414 - (T - 24) * 6.3); phase = alt > 0 ? 'descent' : 'landed'; }
+  else { alt = 0; phase = 'landed'; }
+  if (T >= 22 && T < 24) alt = 410 + Math.sin((T - 22) / 2 * Math.PI) * 4;
+
+  let roll, pitch, hdg;
+  if (phase === 'pad' || phase === 'landed') { roll = 2 + rnd(0.3); pitch = 7 + rnd(0.3); hdg = 292 + rnd(0.5); }
+  else if (phase === 'ascent') { roll = 3 * Math.sin(t * 3) + rnd(1); pitch = 80 + 4 * Math.sin(t * 2.5); hdg = (292 + (T - 8) * 25) % 360; }
+  else { roll = 28 * Math.sin(t * 1.1) + 8 * Math.sin(t * 2.9); pitch = 20 * Math.sin(t * 0.8 + 1) + 6 * Math.sin(t * 2.1); hdg = (292 + (T - 8) * 25 + (T - 24) * 35) % 360; }
+
+  const dt = 0.05;
+  const gx = (roll - demoPrev.roll) / dt, gy = (pitch - demoPrev.pitch) / dt;
+  let dh = hdg - demoPrev.hdg; if (dh > 180) dh -= 360; if (dh < -180) dh += 360;
+  const gz = -dh / dt;
+  const vs = (alt - demoPrev.alt) / dt;
+  demoPrev.alt = alt; demoPrev.roll = roll; demoPrev.pitch = pitch; demoPrev.hdg = hdg;
+
+  const r = roll * Math.PI / 180, p = pitch * Math.PI / 180;
+  let ax = -Math.sin(p), ay = Math.sin(r) * Math.cos(p), az = Math.cos(r) * Math.cos(p);
+  let gscale = 1;
+  if (phase === 'ascent' && T < 18) gscale = 1 + 4.2 / 9.81 * 3;           // motor thrust
+  if (phase === 'apogee') gscale = 0.08;                                     // brief free fall
+  if (T >= 24 && T < 24.4) gscale = 4.5;                                     // parachute opening shock
+  ax = ax * gscale + rnd(0.02); ay = ay * gscale + rnd(0.02); az = az * gscale + rnd(0.02);
+  const at = Math.sqrt(ax * ax + ay * ay + az * az);
+
+  const h = hdg * Math.PI / 180;
+  const mx = 34 * Math.cos(h) + rnd(0.4), my = -34 * Math.sin(h) + rnd(0.4), mz = 33 + rnd(0.4);
+  const press = 978.3 * Math.pow(1 - alt / 44330, 5.255);
+  const drift = Math.max(0, Math.min(T, 90) - 8) * 2.6;                     // wind drift (m)
+  const lat0 = 30.6300, lon0 = 76.7250;
+  const lat = lat0 + (drift * 0.4) / 110540;
+  const lon = lon0 + (drift * 0.9) / (111320 * Math.cos(lat0 * Math.PI / 180));
+  const f = (v, d) => v.toFixed(d);
+  return [
+    'Rel_alt_m:' + f(alt + rnd(0.15), 2), 'GPS_rel_alt_m:' + f(alt + rnd(2.5), 2), 'VSpeed_mps:' + f(vs + rnd(0.1), 2),
+    'Press_change_hPa:' + f(press - 978.3, 2), 'BMP_temp_C:' + f(16.5 - alt * 0.0065 + rnd(0.02), 2), 'IMU_temp_C:' + f(19.2 - alt * 0.004, 2),
+    'Ax_g:' + f(ax, 3), 'Ay_g:' + f(ay, 3), 'Az_g:' + f(az, 3), 'Atotal_g:' + f(at, 3),
+    'Gx_dps:' + f(gx + rnd(0.3), 2), 'Gy_dps:' + f(gy + rnd(0.3), 2), 'Gz_dps:' + f(gz + rnd(0.3), 2),
+    'Roll_deg:' + f(roll, 1), 'Pitch_deg:' + f(pitch, 1), 'Heading_deg:' + f(hdg, 1),
+    'Mx_uT:' + f(mx, 1), 'My_uT:' + f(my, 1), 'Mz_uT:' + f(mz, 1), 'Field_uT:' + f(Math.sqrt(mx * mx + my * my + mz * mz), 1),
+    'Sats:' + (11 + Math.round(Math.sin(t / 7))), 'Speed_kmph:' + f(phase === 'pad' || phase === 'landed' ? 0.2 + rnd(0.1) : 9.4 + rnd(0.5), 2),
+    'Lat:' + lat.toFixed(6), 'Lon:' + lon.toFixed(6), 'GPS_alt_m:' + f(310 + alt + rnd(2.5), 1),
+    'Pressure_hPa:' + f(press, 2), 'HDOP:' + f(1.05 + Math.abs(rnd(0.15)), 2),
+  ].join(',');
+}
+
+// =====================================================================
+// Session controls
+// =====================================================================
+function stopAll() {
+  if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+  if (port) disconnectSerial();
+  S.mode = 'idle';
+  setControls();
+}
+function resetSession() {
+  S.buf = []; S.latest = {}; S.track = []; S.origin = null; S.gyroYaw = 0; S.lastGyroT = 0;
+  S.ev = {maxAlt: -1e9, launched:false, apogee:false, landed:false, ffStart:0, ffLogged:false, lastShock:0, calmSince:0};
+  demoPrev.alt = 0; demoPrev.roll = 0; demoPrev.pitch = 0; demoPrev.hdg = 292;
+}
+function setControls() {
+  $('btnStop').disabled = S.mode === 'idle';
+  $('btnConnect').disabled = S.mode === 'live';
+  $('btnDemo').classList.toggle('on', S.mode === 'demo');
+}
+function updateStatus() {
+  const st = $('status'), tx = $('statusText');
+  st.className = 'pill';
+  const t = nowS();
+  while (S.packetTimes.length && S.packetTimes[0] < t - 2) S.packetTimes.shift();
+  $('rate').textContent = (S.packetTimes.length / 2).toFixed(0) + ' Hz';
+  if (S.mode === 'idle') { tx.textContent = 'Not connected'; return; }
+  if (t - S.lastPacketAt > 1.5) {
+    st.classList.add('stale');
+    tx.textContent = S.mode === 'live' ? 'Connected · no data (send p)' : 'Waiting…';
+    return;
+  }
+  st.classList.add(S.mode);
+  tx.textContent = S.mode === 'live' ? 'Live · ESP32' : 'Demo flight';
+}
+
+$('btnConnect').onclick = connectSerial;
+$('btnDemo').onclick = startDemo;
+$('btnStop').onclick = () => { stopAll(); logConsole('--- stopped ---'); };
+document.querySelectorAll('[data-cmd]').forEach(b => b.onclick = () => sendCmd(b.dataset.cmd));
+$('cmdSend').onclick = () => { sendCmd($('cmdText').value); $('cmdText').value = ''; };
+$('cmdText').addEventListener('keydown', e => { if (e.key === 'Enter') $('cmdSend').click(); });
+
+// Recording / export
+$('btnRec').onclick = () => {
+  if (!S.recording) {
+    S.recording = true; S.rec = []; S.recKeys = new Set(['time_s']); S.recStart = nowS();
+    $('btnRec').classList.add('on'); $('btnCsv').disabled = true; $('btnCopy').disabled = true;
+  } else {
+    S.recording = false;
+    $('btnRec').classList.remove('on'); $('btnRec').textContent = '● Record';
+    $('btnCsv').disabled = !S.rec.length; $('btnCopy').disabled = !S.rec.length;
+    logConsole('--- recorded ' + S.rec.length + ' samples ---');
+  }
+};
+function buildCsv() {
+  const keys = Array.from(S.recKeys);
+  const lines = [keys.join(',')];
+  for (const r of S.rec) lines.push(keys.map(k => r[k] !== undefined ? r[k] : '').join(','));
+  return lines.join('\n');
+}
+$('btnCsv').onclick = () => {
+  try {
+    const blob = new Blob([buildCsv()], {type: 'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pocketqube_flight_' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    logConsole('--- CSV download started (if nothing happens, use Copy CSV) ---');
+  } catch (e) { logConsole('--- download blocked here, use Copy CSV ---'); }
+};
+$('btnCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText(buildCsv()); logConsole('--- CSV copied to clipboard (' + S.rec.length + ' rows) ---'); }
+  catch (e) { logConsole('--- clipboard blocked: ' + e.message + ' ---'); }
+};
+
+// =====================================================================
+// Flight events
+// =====================================================================
+const EVCOL = {launch:'#22d3ee', freefall:'#c084fc', apogee:'#fbbf24', shock:'#f87171', landed:'#4ade80', info:'#94a3b8'};
+function addEvent(kind, text) {
+  const ul = $('events');
+  const empty = ul.querySelector('.empty'); if (empty) empty.remove();
+  const li = document.createElement('li');
+  const d = new Date();
+  li.innerHTML = '<time>' + d.toTimeString().slice(0, 8) + '</time><span class="tag" style="background:' + EVCOL[kind] + '22;color:' + EVCOL[kind] + '">' + kind + '</span><span>' + text + '</span>';
+  ul.prepend(li);
+}
+$('btnClearEv').onclick = () => { $('events').innerHTML = '<li class="empty" style="border:0">Events cleared.</li>'; S.ev = {maxAlt: -1e9, launched:false, apogee:false, landed:false, ffStart:0, ffLogged:false, lastShock:0, calmSince:0}; };
+
+function detectEvents(p) {
+  const e = S.ev, t = p._t;
+  const alt = p.Rel_alt_m, vs = p.VSpeed_mps, at = p.Atotal_g;
+  if (alt !== undefined) {
+    if (alt > e.maxAlt) e.maxAlt = alt;
+    if (!e.launched && alt > 5 && vs > 2) { e.launched = true; e.apogee = false; e.landed = false; e.maxAlt = alt; addEvent('launch', 'Climbing: ' + alt.toFixed(1) + ' m, ' + vs.toFixed(1) + ' m/s'); }
+    if (e.launched && !e.apogee && e.maxAlt > 10 && alt < e.maxAlt - 3) { e.apogee = true; addEvent('apogee', 'Apogee ' + e.maxAlt.toFixed(1) + ' m above ground'); }
+    if (e.apogee && !e.landed) {
+      if (Math.abs(vs) < 0.4 && alt < 5) { if (!e.calmSince) e.calmSince = t; if (t - e.calmSince > 3) { e.landed = true; e.launched = false; addEvent('landed', 'Landed at ' + alt.toFixed(1) + ' m (rel). Max altitude ' + e.maxAlt.toFixed(1) + ' m'); } }
+      else e.calmSince = 0;
+    }
+  }
+  if (at !== undefined) {
+    if (at < 0.3) { if (!e.ffStart) e.ffStart = t; if (!e.ffLogged && t - e.ffStart > 0.25) { e.ffLogged = true; addEvent('freefall', 'Free fall detected (|A| = ' + at.toFixed(2) + ' g)'); } }
+    else { e.ffStart = 0; if (at > 0.8) e.ffLogged = false; }
+    if (at > 3 && t - e.lastShock > 1) { e.lastShock = t; addEvent('shock', 'High-g event: ' + at.toFixed(2) + ' g'); }
+  }
+}
+
+// =====================================================================
+// 3D PocketQube
+// =====================================================================
+let renderer, scene, camera, controls, sat, axesGroup, panelMats = [], imuBoard;
+const viewQ = new THREE.Quaternion();
+
+function makeSolarTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1b2a3c'; g.fillRect(0, 0, 256, 256);
+  const cells = [[14, 18, 228, 104], [14, 134, 228, 104]];
+  for (const [x, y, w, h] of cells) {
+    const gr = g.createLinearGradient(x, y, x + w, y + h);
+    gr.addColorStop(0, '#152a6b'); gr.addColorStop(.5, '#1d3a8f'); gr.addColorStop(1, '#122259');
+    g.fillStyle = gr; g.fillRect(x, y, w, h);
+    g.strokeStyle = 'rgba(200,210,230,.55)'; g.lineWidth = 1;
+    for (let i = 1; i < 18; i++) { g.beginPath(); g.moveTo(x + i * w / 18, y); g.lineTo(x + i * w / 18, y + h); g.stroke(); }
+    g.lineWidth = 3; g.strokeStyle = 'rgba(220,225,235,.8)';
+    g.beginPath(); g.moveTo(x, y + h / 3); g.lineTo(x + w, y + h / 3); g.moveTo(x, y + 2 * h / 3); g.lineTo(x + w, y + 2 * h / 3); g.stroke();
+    g.strokeStyle = '#c9a227'; g.lineWidth = 2; g.strokeRect(x, y, w, h);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function textSprite(txt, color, size) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  const g = c.getContext('2d');
+  g.font = 'bold 40px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = color; g.fillText(txt, 64, 34);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), depthTest: false, transparent: true}));
+  sp.scale.set(size * 2, size, 1);
+  return sp;
+}
+
+function box(w, h, d, mat, x, y, z, parent) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z); parent.add(m); return m;
+}
+
+function buildPocketQube(root) {
+  // 1 unit = 50 mm (1P PocketQube is 50 x 50 x 50 mm, with a sliding backplate)
+  const metal = new THREE.MeshStandardMaterial({color: 0xb8c0cc, metalness: .85, roughness: .32});
+  const anod = new THREE.MeshStandardMaterial({color: 0xc9a227, metalness: .7, roughness: .38});
+  const pcb = new THREE.MeshStandardMaterial({color: 0x0f5132, metalness: .2, roughness: .6});
+  const black = new THREE.MeshStandardMaterial({color: 0x111111, metalness: .3, roughness: .5});
+  const silver = new THREE.MeshStandardMaterial({color: 0xd5d9e0, metalness: .9, roughness: .25});
+
+  // Corner rails + frame
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(.07, 1, .07, metal, sx * .465, 0, sz * .465, root);
+  for (const y of [-.47, .47]) {
+    for (const sz of [-1, 1]) box(1, .06, .06, metal, 0, y, sz * .47, root);
+    for (const sx of [-1, 1]) box(.06, .06, 1, metal, sx * .47, y, 0, root);
+  }
+  // Backplate (sliding plate, larger than the cube)
+  box(1.16, .045, 1.16, anod, 0, -.525, 0, root);
+
+  // Solar panels on 4 sides + top
+  const tex = makeSolarTexture();
+  const faces = [
+    [[.505, 0, 0], [0, Math.PI / 2, 0]], [[-.505, 0, 0], [0, -Math.PI / 2, 0]],
+    [[0, 0, .505], [0, 0, 0]], [[0, 0, -.505], [0, Math.PI, 0]],
+    [[0, .505, 0], [-Math.PI / 2, 0, 0]],
+  ];
+  for (const [pos, rot] of faces) {
+    const mat = new THREE.MeshStandardMaterial({map: tex, metalness: .35, roughness: .35, transparent: true, opacity: .22, side: THREE.DoubleSide, depthWrite: false});
+    panelMats.push(mat);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(.88, .88), mat);
+    m.position.set(...pos); m.rotation.set(...rot); root.add(m);
+  }
+
+  // Deployable tape antennas from the top edge
+  const tape = new THREE.MeshStandardMaterial({color: 0xe5e7eb, metalness: .6, roughness: .3});
+  box(.9, .006, .03, tape, .45 + .45, .49, .47, root);
+  box(.03, .006, .9, tape, -.47, .49, -.45 - .45, root);
+
+  // Internal PCB stack with standoffs
+  const standoff = new THREE.MeshStandardMaterial({color: 0xc0a060, metalness: .8, roughness: .3});
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .9, 10), standoff);
+    s.position.set(sx * .34, 0, sz * .34); root.add(s);
+  }
+  // Bottom board: battery
+  box(.82, .025, .82, pcb, 0, -.33, 0, root);
+  box(.6, .14, .32, new THREE.MeshStandardMaterial({color: 0x1d4ed8, roughness: .5}), 0, -.24, 0, root);
+  const battLbl = textSprite('Li-ion', '#cbd5e1', .07); battLbl.position.set(0, -.24, .2); root.add(battLbl);
+
+  // Middle board: ESP32 + GY-91
+  box(.82, .025, .82, pcb, 0, -.02, 0, root);
+  box(.26, .03, .36, black, -.2, .01, .05, root);              // ESP32 module
+  box(.22, .02, .26, silver, -.2, .035, .0, root);             // RF can
+  // GY-91 breakout (purple board)
+  imuBoard = new THREE.Group();
+  imuBoard.position.set(.17, .012, 0);
+  root.add(imuBoard);
+  const purple = new THREE.MeshStandardMaterial({color: 0x6d28d9, metalness: .2, roughness: .5, emissive: 0x4c1d95, emissiveIntensity: .35});
+  box(.3, .018, .2, purple, 0, 0, 0, imuBoard);
+  box(.06, .014, .06, black, -.05, .015, 0, imuBoard);          // MPU9250
+  box(.045, .012, .045, silver, .07, .014, 0, imuBoard);        // BMP280
+  for (let i = 0; i < 8; i++) box(.012, .02, .012, metal, -.13 + i * .037, .01, .085, imuBoard); // header pins
+  const imuLbl = textSprite('GY-91', '#e9d5ff', .07); imuLbl.position.set(0, .09, -.06); imuBoard.add(imuLbl);
+
+  // Top board: GNSS + compass module
+  box(.82, .025, .82, pcb, 0, .3, 0, root);
+  box(.3, .02, .3, black, .05, .325, .05, root);
+  box(.2, .04, .2, new THREE.MeshStandardMaterial({color: 0xc8a97a, roughness: .7}), .05, .355, .05, root); // ceramic patch
+  const gpsLbl = textSprite('M10Q', '#fde68a', .06); gpsLbl.position.set(.05, .43, .05); root.add(gpsLbl);
+
+  // Sensor axes on the GY-91 (sensor X -> +X, sensor Y -> -Z, sensor Z -> +Y)
+  axesGroup = new THREE.Group();
+  imuBoard.add(axesGroup);
+  const L = .78, o = new THREE.Vector3(0, .02, 0);
+  const ax = [[new THREE.Vector3(1, 0, 0), 0xff5d6c, 'X'], [new THREE.Vector3(0, 0, -1), 0x4ade80, 'Y'], [new THREE.Vector3(0, 1, 0), 0x60a5fa, 'Z']];
+  for (const [dir, col, name] of ax) {
+    const a = new THREE.ArrowHelper(dir, o, L, col, .08, .05);
+    a.line.material.depthTest = false; a.cone.material.depthTest = false; a.renderOrder = 5;
+    axesGroup.add(a);
+    const s = textSprite(name, '#' + col.toString(16).padStart(6, '0'), .09);
+    s.position.copy(dir.clone().multiplyScalar(L + .1)).add(o);
+    axesGroup.add(s);
+  }
+}
+
+function buildGround() {
+  const y = -1.05;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(1.45, 1.5, 96), new THREE.MeshBasicMaterial({color: 0x2a3a58, side: THREE.DoubleSide}));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = y; scene.add(ring);
+  const grid = new THREE.PolarGridHelper(1.45, 12, 4, 64, 0x1c2840, 0x1c2840);
+  grid.position.y = y; scene.add(grid);
+  // North = +X, East = +Z (heading 0 points GY-91 X axis north)
+  const dirs = [['N', 1, 0, '#f87171'], ['E', 0, 1, '#cbd5e1'], ['S', -1, 0, '#cbd5e1'], ['W', 0, -1, '#cbd5e1']];
+  for (const [t, x, z, c] of dirs) { const s = textSprite(t, c, .16); s.position.set(x * 1.7, y + .05, z * 1.7); scene.add(s); }
+  for (let i = 0; i < 36; i++) {
+    const a = i * Math.PI / 18, long = i % 9 === 0;
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(Math.cos(a) * 1.5, y, Math.sin(a) * 1.5), new THREE.Vector3(Math.cos(a) * (long ? 1.62 : 1.56), y, Math.sin(a) * (long ? 1.62 : 1.56))]);
+    scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({color: long ? 0x64748b : 0x334155})));
+  }
+}
+
+function resetView() {
+  camera.position.set(-1.9, 1.35, 2.0);
+  if (controls) { controls.target.set(0, -.1, 0); controls.update(); } else camera.lookAt(0, -.1, 0);
+}
+
+function initScene() {
+  const el = $('viewer');
+  if (typeof THREE === 'undefined') { el.insertAdjacentHTML('beforeend', '<div class="empty" style="position:absolute;inset:0;display:grid;place-items:center">3D library failed to load (needs internet).</div>'); return; }
+  renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  el.prepend(renderer.domElement);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(38, 1, .05, 50);
+  if (THREE.OrbitControls) {
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = .08; controls.minDistance = 1.2; controls.maxDistance = 7;
+  }
+  resetView();
+  scene.add(new THREE.HemisphereLight(0xbcd4ff, 0x1a1a28, .75));
+  const key = new THREE.DirectionalLight(0xffffff, 1.0); key.position.set(3, 5, 2); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x88aaff, .5); rim.position.set(-3, 1, -3); scene.add(rim);
+  buildGround();
+  sat = new THREE.Group(); scene.add(sat);
+  buildPocketQube(sat);
+  new ResizeObserver(resizeScene).observe(el);
+  resizeScene();
+}
+function resizeScene() {
+  if (!renderer) return;
+  const el = $('viewer'), w = el.clientWidth, h = el.clientHeight;
+  renderer.setSize(w, h, false);
+  renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+
+$('btnView').onclick = () => resetView();
+$('xray').onchange = e => panelMats.forEach(m => { m.opacity = e.target.checked ? .22 : 1; m.depthWrite = !e.target.checked; m.needsUpdate = true; });
+$('axes').onchange = e => { if (axesGroup) axesGroup.visible = e.target.checked; };
+$('btnTare').onclick = () => { const a = rawAttitude(); S.tare = {roll: a.roll, pitch: a.pitch, yaw: a.yaw}; logConsole('--- orientation tared ---'); };
+$('btnUntare').onclick = () => { S.tare = {roll: 0, pitch: 0, yaw: 0}; };
+
+function rawAttitude() {
+  const p = S.latest;
+  const src = $('yawSrc').value;
+  let yaw = 0;
+  if (src === 'compass' && p.Heading_deg !== undefined && p.Heading_deg >= 0) yaw = p.Heading_deg;
+  else if (src === 'gyro' && p._gyroYaw !== undefined) yaw = p._gyroYaw;
+  return {roll: p.Roll_deg || 0, pitch: p.Pitch_deg || 0, yaw};
+}
+function attitude() {
+  const a = rawAttitude();
+  let roll = a.roll - S.tare.roll, pitch = a.pitch - S.tare.pitch, yaw = a.yaw - S.tare.yaw;
+  if ($('invR').checked) roll = -roll;
+  if ($('invP').checked) pitch = -pitch;
+  if ($('invY').checked) yaw = -yaw;
+  yaw = ((yaw % 360) + 360) % 360;
+  return {roll, pitch, yaw};
+}
+
+const AX_X = new THREE.Vector3(1, 0, 0), AX_Y = new THREE.Vector3(0, 1, 0), AX_Z = new THREE.Vector3(0, 0, 1);
+const qY = new THREE.Quaternion(), qP = new THREE.Quaternion(), qR = new THREE.Quaternion(), qT = new THREE.Quaternion();
+function updateSat(dt) {
+  if (!sat) return;
+  const a = attitude(), d = Math.PI / 180;
+  qY.setFromAxisAngle(AX_Y, -a.yaw * d);      // heading clockwise from above
+  qP.setFromAxisAngle(AX_Z, a.pitch * d);     // nose (X) up
+  qR.setFromAxisAngle(AX_X, a.roll * d);      // roll about X
+  qT.copy(qY).multiply(qP).multiply(qR);
+  viewQ.slerp(qT, Math.min(1, dt * 12));
+  sat.quaternion.copy(viewQ);
+  if (imuBoard) imuBoard.children[0].material.emissiveIntensity = .25 + .2 * Math.sin(performance.now() / 300);
+  $('hRoll').textContent = S.mode === 'idle' && !S.buf.length ? '--' : a.roll.toFixed(1) + '°';
+  $('hPitch').textContent = S.mode === 'idle' && !S.buf.length ? '--' : a.pitch.toFixed(1) + '°';
+  $('hYaw').textContent = S.mode === 'idle' && !S.buf.length ? '--' : a.yaw.toFixed(1) + '°';
+}
+
+// =====================================================================
+// Instruments
+// =====================================================================
+function drawHorizon(roll, pitch) {
+  const c = $('horizon'), g = c.getContext('2d'), W = c.width, R = W / 2 - 8;
+  g.clearRect(0, 0, W, W);
+  g.save(); g.translate(W / 2, W / 2);
+  g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.clip();
+  g.save();
+  g.rotate(-roll * Math.PI / 180);
+  const k = R / 40, py = Math.max(-R * 2, Math.min(R * 2, pitch * k));
+  const sky = g.createLinearGradient(0, -R * 2, 0, py); sky.addColorStop(0, '#0c4a8a'); sky.addColorStop(1, '#3b82c4');
+  g.fillStyle = sky; g.fillRect(-R * 2, -R * 3, R * 4, R * 3 + py);
+  const gnd = g.createLinearGradient(0, py, 0, R * 2); gnd.addColorStop(0, '#8a5a2b'); gnd.addColorStop(1, '#4a2f14');
+  g.fillStyle = gnd; g.fillRect(-R * 2, py, R * 4, R * 3);
+  g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.moveTo(-R * 2, py); g.lineTo(R * 2, py); g.stroke();
+  g.lineWidth = 2; g.font = '600 20px Inter'; g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let a = -60; a <= 60; a += 10) {
+    if (!a) continue;
+    const y = py - a * k, w = a % 20 === 0 ? 60 : 30;
+    g.beginPath(); g.moveTo(-w, y); g.lineTo(w, y); g.stroke();
+    if (a % 20 === 0) { g.fillText(Math.abs(a), -w - 22, y); g.fillText(Math.abs(a), w + 22, y); }
+  }
+  g.restore();
+  // roll scale
+  g.strokeStyle = '#fff'; g.lineWidth = 2;
+  for (const a of [-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60]) {
+    const t = (a - 90) * Math.PI / 180, l = a % 30 === 0 ? 18 : 10;
+    g.beginPath(); g.moveTo(Math.cos(t) * (R - 4), Math.sin(t) * (R - 4)); g.lineTo(Math.cos(t) * (R - 4 - l), Math.sin(t) * (R - 4 - l)); g.stroke();
+  }
+  g.save(); g.rotate(-roll * Math.PI / 180);
+  g.fillStyle = '#fbbf24'; g.beginPath(); g.moveTo(0, -R + 26); g.lineTo(-10, -R + 42); g.lineTo(10, -R + 42); g.closePath(); g.fill();
+  g.restore();
+  // aircraft symbol
+  g.strokeStyle = '#fbbf24'; g.lineWidth = 6; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(-95, 0); g.lineTo(-35, 0); g.lineTo(-20, 16); g.moveTo(95, 0); g.lineTo(35, 0); g.lineTo(20, 16); g.stroke();
+  g.fillStyle = '#fbbf24'; g.beginPath(); g.arc(0, 0, 6, 0, Math.PI * 2); g.fill();
+  g.restore();
+  g.strokeStyle = '#2a3852'; g.lineWidth = 6; g.beginPath(); g.arc(W / 2, W / 2, R + 2, 0, Math.PI * 2); g.stroke();
+}
+
+function drawCompass(hdg) {
+  const c = $('compass'), g = c.getContext('2d'), W = c.width, R = W / 2 - 8;
+  g.clearRect(0, 0, W, W);
+  g.save(); g.translate(W / 2, W / 2);
+  g.fillStyle = '#0d1320'; g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#2a3852'; g.lineWidth = 6; g.stroke();
+  g.save(); g.rotate(-hdg * Math.PI / 180);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let a = 0; a < 360; a += 5) {
+    const t = (a - 90) * Math.PI / 180, l = a % 30 === 0 ? 20 : a % 10 === 0 ? 12 : 6;
+    g.strokeStyle = a % 30 === 0 ? '#cbd5e1' : '#475569'; g.lineWidth = a % 30 === 0 ? 3 : 1.5;
+    g.beginPath(); g.moveTo(Math.cos(t) * (R - 6), Math.sin(t) * (R - 6)); g.lineTo(Math.cos(t) * (R - 6 - l), Math.sin(t) * (R - 6 - l)); g.stroke();
+    if (a % 30 === 0) {
+      const lab = {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[a] || (a / 10).toString();
+      g.save(); g.translate(Math.cos(t) * (R - 46), Math.sin(t) * (R - 46)); g.rotate(a * Math.PI / 180);
+      g.fillStyle = a === 0 ? '#f87171' : '#e2e8f0'; g.font = (a % 90 === 0 ? '700 30px' : '500 20px') + ' Inter';
+      g.fillText(lab, 0, 0); g.restore();
+    }
+  }
+  g.restore();
+  g.fillStyle = '#fbbf24'; g.beginPath(); g.moveTo(0, -R + 2); g.lineTo(-12, -R - 14 + 30); g.lineTo(12, -R - 14 + 30); g.closePath(); g.fill();
+  g.fillStyle = '#e6edf7'; g.font = '600 46px "JetBrains Mono"'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(isFinite(hdg) ? Math.round(hdg).toString().padStart(3, '0') + '°' : '---', 0, 0);
+  g.fillStyle = '#8693a8'; g.font = '500 18px Inter'; g.fillText(cardinal(hdg), 0, 38);
+  g.restore();
+}
+function cardinal(h) { if (!isFinite(h)) return ''; return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(h / 45) % 8]; }
+
+// =====================================================================
+// Tiles
+// =====================================================================
+const TILES = [
+  ['Rel_alt_m', 'Altitude (baro)', 'm', 2], ['VSpeed_mps', 'Vertical speed', 'm/s', 2],
+  ['Atotal_g', 'Total accel', 'g', 3], ['_maxAlt', 'Max altitude', 'm', 1],
+  ['Field_uT', 'Mag field', 'µT', 1], ['Pressure_hPa', 'Pressure', 'hPa', 2],
+  ['BMP_temp_C', 'Temp (BMP280)', '°C', 1], ['Speed_kmph', 'Ground speed', 'km/h', 1],
+];
+function buildTiles() {
+  $('tiles').innerHTML = TILES.map(([k, l, u]) => '<div class="tile"><span>' + l + '</span><b id="t_' + k + '">--<small>' + u + '</small></b></div>').join('');
+}
+function updateTiles() {
+  const p = S.latest;
+  for (const [k, , u, d] of TILES) {
+    let v = k === '_maxAlt' ? (S.ev.maxAlt > -1e8 ? S.ev.maxAlt : undefined) : p[k];
+    if (k === 'Pressure_hPa' && v === undefined && p.Press_change_hPa !== undefined) { $('t_' + k).innerHTML = (p.Press_change_hPa >= 0 ? '+' : '') + p.Press_change_hPa.toFixed(2) + '<small>hPa Δ</small>'; continue; }
+    $('t_' + k).innerHTML = (v === undefined ? '--' : v.toFixed(d)) + '<small>' + u + '</small>';
+  }
+}
+
+// =====================================================================
+// Charts
+// =====================================================================
+const CHARTS = [
+  {title: 'Altitude (relative to start)', unit: 'm', min: 2, s: [['Rel_alt_m', 'Barometer', '#4cc9f0'], ['GPS_rel_alt_m', 'GPS', '#fbbf24']]},
+  {title: 'Vertical speed', unit: 'm/s', min: 1, zero: true, s: [['VSpeed_mps', 'Vz', '#4ade80']]},
+  {title: 'Acceleration', unit: 'g', min: .5, s: [['Ax_g', 'X', '#ff5d6c'], ['Ay_g', 'Y', '#4ade80'], ['Az_g', 'Z', '#60a5fa'], ['Atotal_g', '|A|', '#e5e7eb']]},
+  {title: 'Angular rate', unit: '°/s', min: 5, zero: true, s: [['Gx_dps', 'X', '#ff5d6c'], ['Gy_dps', 'Y', '#4ade80'], ['Gz_dps', 'Z', '#60a5fa']]},
+  {title: 'Attitude', unit: '°', min: 10, s: [['Roll_deg', 'Roll', '#ff5d6c'], ['Pitch_deg', 'Pitch', '#4ade80']]},
+  {title: 'Heading', unit: '°', min: 10, s: [['Heading_deg', 'Compass', '#fbbf24'], ['_gyroYaw', 'Gyro yaw', '#c084fc']]},
+  {title: 'Magnetic field', unit: 'µT', min: 10, s: [['Mx_uT', 'X', '#ff5d6c'], ['My_uT', 'Y', '#4ade80'], ['Mz_uT', 'Z', '#60a5fa'], ['Field_uT', '|B|', '#e5e7eb']]},
+  {title: 'Pressure change & temperature', unit: '', min: 1, s: [['Press_change_hPa', 'ΔP hPa', '#4cc9f0'], ['BMP_temp_C', 'BMP °C', '#fb923c'], ['IMU_temp_C', 'IMU °C', '#c084fc']]},
+];
+
+class Chart {
+  constructor(def) {
+    this.def = def; this.hidden = new Set(); this.hover = null;
+    const el = document.createElement('div'); el.className = 'card chart';
+    el.innerHTML = '<div class="hd"><h2>' + def.title + (def.unit ? ' <span style="text-transform:none">(' + def.unit + ')</span>' : '') + '</h2><div class="legend sp"></div></div><canvas></canvas>';
+    this.el = el; this.canvas = el.querySelector('canvas'); this.ctx = this.canvas.getContext('2d');
+    const lg = el.querySelector('.legend'); this.vals = {};
+    for (const [k, lab, col] of def.s) {
+      const ch = document.createElement('span'); ch.className = 'chip';
+      ch.innerHTML = '<i style="background:' + col + '"></i>' + lab + '<em>--</em>';
+      ch.onclick = () => { if (this.hidden.has(k)) this.hidden.delete(k); else this.hidden.add(k); ch.classList.toggle('off'); };
+      this.vals[k] = ch.querySelector('em');
+      lg.appendChild(ch);
+    }
+    this.canvas.addEventListener('mousemove', e => { const r = this.canvas.getBoundingClientRect(); this.hover = e.clientX - r.left; });
+    this.canvas.addEventListener('mouseleave', () => this.hover = null);
+  }
+  draw(now, win) {
+    const c = this.canvas, dpr = Math.min(devicePixelRatio, 2);
+    const W = c.clientWidth, H = c.clientHeight;
+    if (!W) return;
+    if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    const g = this.ctx; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    const L = 48, Rp = 12, T = 10, B = 22, pw = W - L - Rp, ph = H - T - B;
+    const buf = S.buf, t0 = now - win;
+    let lo = 0, hi = buf.length; while (lo < hi) { const m = (lo + hi) >> 1; if (buf[m]._t < t0) lo = m + 1; else hi = m; }
+    const start = Math.max(0, lo - 1);
+    const series = this.def.s.filter(s => !this.hidden.has(s[0]));
+    let mn = Infinity, mx = -Infinity;
+    for (let i = start; i < buf.length; i++) for (const [k] of series) { const v = buf[i][k]; if (v !== undefined) { if (v < mn) mn = v; if (v > mx) mx = v; } }
+    const latest = S.latest;
+    for (const [k] of this.def.s) { const v = latest[k]; this.vals[k].textContent = v === undefined ? '--' : v.toFixed(Math.abs(v) >= 100 ? 1 : 2); }
+    g.font = '11px Inter'; g.fillStyle = '#5b6880';
+    if (!isFinite(mn)) { g.textAlign = 'center'; g.fillText('Waiting for data…', W / 2, H / 2); return; }
+    if (this.def.zero) { mn = Math.min(mn, 0); mx = Math.max(mx, 0); }
+    if (mx - mn < this.def.min) { const c0 = (mx + mn) / 2; mn = c0 - this.def.min / 2; mx = c0 + this.def.min / 2; }
+    const pad = (mx - mn) * .1; mn -= pad; mx += pad;
+    const step = niceStep((mx - mn) / 5);
+    const X = t => L + (t - t0) / win * pw, Y = v => T + (1 - (v - mn) / (mx - mn)) * ph;
+    // grid
+    g.strokeStyle = '#1b2538'; g.lineWidth = 1; g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let v = Math.ceil(mn / step) * step; v <= mx; v += step) {
+      const y = Math.round(Y(v)) + .5; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke();
+      g.fillText(fmtTick(v, step), L - 6, y);
+    }
+    if (mn < 0 && mx > 0) { g.strokeStyle = '#334155'; g.beginPath(); g.moveTo(L, Y(0)); g.lineTo(L + pw, Y(0)); g.stroke(); }
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    const xs = niceStep(win / 6);
+    for (let s = 0; s <= win + 1e-6; s += xs) { const x = L + pw - s / win * pw; g.fillText(s === 0 ? 'now' : '-' + s + 's', x, T + ph + 6); }
+    // lines
+    g.save(); g.beginPath(); g.rect(L, T, pw, ph); g.clip();
+    g.lineWidth = 1.7; g.lineJoin = 'round';
+    for (const [k, , col] of series) {
+      g.strokeStyle = col; g.beginPath(); let started = false;
+      for (let i = start; i < buf.length; i++) { const v = buf[i][k]; if (v === undefined) continue; const x = X(buf[i]._t), y = Y(v); if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y); }
+      g.stroke();
+    }
+    g.restore();
+    // hover
+    if (this.hover !== null && this.hover > L && this.hover < L + pw) {
+      const th = t0 + (this.hover - L) / pw * win;
+      let bi = start, bd = Infinity;
+      for (let i = start; i < buf.length; i++) { const d = Math.abs(buf[i]._t - th); if (d < bd) { bd = d; bi = i; } }
+      const p = buf[bi]; if (!p) return;
+      const x = X(p._t);
+      g.strokeStyle = '#64748b'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke(); g.setLineDash([]);
+      const rows = series.filter(s => p[s[0]] !== undefined);
+      const bw = 130, bh = 18 + rows.length * 16; let bx = x + 10; if (bx + bw > W - 4) bx = x - bw - 10;
+      g.fillStyle = 'rgba(9,13,21,.92)'; g.strokeStyle = '#2a3852'; g.fillRect(bx, T + 4, bw, bh); g.strokeRect(bx + .5, T + 4.5, bw, bh);
+      g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = '#8693a8';
+      g.fillText((p._t - now).toFixed(1) + ' s', bx + 8, T + 8);
+      rows.forEach(([k, lab, col], i) => {
+        g.fillStyle = col; g.fillRect(bx + 8, T + 27 + i * 16, 8, 8);
+        g.fillStyle = '#e6edf7'; g.fillText(lab + ': ' + p[k].toFixed(3), bx + 22, T + 24 + i * 16);
+        g.beginPath(); g.arc(x, Y(p[k]), 3.5, 0, Math.PI * 2); g.fillStyle = col; g.fill();
+      });
+    }
+  }
+}
+function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p; }
+function fmtTick(v, step) { const d = step >= 1 ? 0 : Math.min(3, Math.ceil(-Math.log10(step))); return v.toFixed(d); }
+
+const charts = CHARTS.map(d => new Chart(d));
+charts.forEach(c => $('charts').appendChild(c.el));
+$('btnPause').onclick = () => { S.paused = !S.paused; S.pauseAt = nowS(); $('btnPause').textContent = S.paused ? 'Resume' : 'Pause'; $('btnPause').classList.toggle('on', S.paused); };
+
+// =====================================================================
+// GNSS track
+// =====================================================================
+function updateTrack(p) {
+  if (p.Lat === undefined || p.Lon === undefined || (p.Lat === 0 && p.Lon === 0)) return;
+  if (!S.origin) S.origin = {lat: p.Lat, lon: p.Lon};
+  const x = (p.Lon - S.origin.lon) * 111320 * Math.cos(S.origin.lat * Math.PI / 180);
+  const y = (p.Lat - S.origin.lat) * 110540;
+  const last = S.track[S.track.length - 1];
+  if (!last || Math.hypot(x - last.x, y - last.y) > .3 || p._t - last.t > 1) S.track.push({x, y, t: p._t, alt: p.Rel_alt_m || 0});
+  if (S.track.length > 5000) S.track.shift();
+}
+$('btnClearTrack').onclick = () => { S.track = []; S.origin = null; };
+
+function drawTrack() {
+  const c = $('track'), dpr = Math.min(devicePixelRatio, 2), W = c.clientWidth, H = c.clientHeight;
+  if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const p = S.latest;
+  $('gLat').textContent = p.Lat !== undefined ? p.Lat.toFixed(6) : '--';
+  $('gLon').textContent = p.Lon !== undefined ? p.Lon.toFixed(6) : '--';
+  $('gAlt').textContent = p.GPS_alt_m !== undefined ? p.GPS_alt_m.toFixed(1) + ' m' : '--';
+  $('gSat').textContent = p.Sats !== undefined ? p.Sats : '--';
+  $('gHdop').textContent = p.HDOP !== undefined ? p.HDOP.toFixed(2) : '--';
+  g.font = '12px Inter'; g.fillStyle = '#5b6880'; g.textAlign = 'center';
+  if (!S.track.length) {
+    $('gDist').textContent = '--';
+    g.fillText(p.Sats !== undefined && p.Lat === undefined ? 'No Lat/Lon in data: add them to the firmware (see notes)' : 'Waiting for GPS fix…', W / 2, H / 2);
+    return;
+  }
+  let mnx = 0, mxx = 0, mny = 0, mxy = 0;
+  for (const q of S.track) { mnx = Math.min(mnx, q.x); mxx = Math.max(mxx, q.x); mny = Math.min(mny, q.y); mxy = Math.max(mxy, q.y); }
+  const span = Math.max(10, mxx - mnx, mxy - mny) * 1.25;
+  const sc = Math.min(W, H) / span, cx = (mnx + mxx) / 2, cy = (mny + mxy) / 2;
+  const X = x => W / 2 + (x - cx) * sc, Y = y => H / 2 - (y - cy) * sc;
+  // grid
+  const gs = niceStep(span / 6);
+  g.strokeStyle = '#162033'; g.lineWidth = 1;
+  for (let x = Math.floor((cx - W / sc) / gs) * gs; x < cx + W / sc; x += gs) { g.beginPath(); g.moveTo(X(x), 0); g.lineTo(X(x), H); g.stroke(); }
+  for (let y = Math.floor((cy - H / sc) / gs) * gs; y < cy + H / sc; y += gs) { g.beginPath(); g.moveTo(0, Y(y)); g.lineTo(W, Y(y)); g.stroke(); }
+  // path coloured by altitude
+  const maxA = Math.max(1, ...S.track.map(q => q.alt));
+  g.lineWidth = 2.5; g.lineCap = 'round';
+  for (let i = 1; i < S.track.length; i++) {
+    const a = S.track[i - 1], b = S.track[i], f = Math.max(0, Math.min(1, b.alt / maxA));
+    g.strokeStyle = 'hsl(' + (190 - f * 150) + ',85%,60%)';
+    g.beginPath(); g.moveTo(X(a.x), Y(a.y)); g.lineTo(X(b.x), Y(b.y)); g.stroke();
+  }
+  // start
+  g.fillStyle = '#4ade80'; g.beginPath(); g.arc(X(0), Y(0), 5, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#8693a8'; g.textAlign = 'left'; g.fillText('start', X(0) + 8, Y(0) + 4);
+  // current + heading
+  const cur = S.track[S.track.length - 1];
+  const hd = (p.Heading_deg || 0) * Math.PI / 180;
+  g.save(); g.translate(X(cur.x), Y(cur.y)); g.rotate(hd);
+  g.fillStyle = '#fbbf24'; g.beginPath(); g.moveTo(0, -12); g.lineTo(7, 8); g.lineTo(0, 4); g.lineTo(-7, 8); g.closePath(); g.fill();
+  g.restore();
+  // north + scale bar
+  g.fillStyle = '#f87171'; g.font = '700 13px Inter'; g.textAlign = 'center'; g.fillText('N ↑', W - 22, 20);
+  g.strokeStyle = '#cbd5e1'; g.lineWidth = 2; const bl = gs * sc;
+  g.beginPath(); g.moveTo(14, H - 16); g.lineTo(14 + bl, H - 16); g.moveTo(14, H - 21); g.lineTo(14, H - 11); g.moveTo(14 + bl, H - 21); g.lineTo(14 + bl, H - 11); g.stroke();
+  g.fillStyle = '#cbd5e1'; g.font = '11px Inter'; g.fillText(gs + ' m', 14 + bl / 2, H - 26);
+  $('gDist').textContent = Math.hypot(cur.x, cur.y).toFixed(1) + ' m';
+}
+
+// =====================================================================
+// Main loop
+// =====================================================================
+buildTiles();
+initScene();
+let lastFrame = performance.now(), lastSlow = 0;
+function frame(ts) {
+  const dt = Math.min(.1, (ts - lastFrame) / 1000); lastFrame = ts;
+  updateSat(dt);
+  if (controls) controls.update();
+  if (renderer) renderer.render(scene, camera);
+  if (ts - lastSlow > 60) {
+    lastSlow = ts;
+    const a = attitude();
+    drawHorizon(a.roll, a.pitch);
+    const h = S.latest.Heading_deg;
+    drawCompass(h !== undefined && h >= 0 ? a.yaw : NaN);
+    const win = +$('win').value, now = S.paused ? S.pauseAt : nowS();
+    charts.forEach(c => c.draw(now, win));
+    drawTrack();
+    updateTiles();
+    updateStatus();
+    flushConsole();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+if (serialAllowed() === 'blocked') banner('<b>Showing in the claude.ai viewer:</b> live USB is blocked here, so press <b>Demo flight</b> to try it. To connect your ESP32, open the downloaded <span class="mono">pocketqube_ground_station.html</span> file in Chrome or Edge.');
+logConsole('Ready. Close the Arduino Serial Monitor/Plotter, then press "Connect ESP32 (USB)" and pick your COM port.');
+</script>
+</body>
+</html>
